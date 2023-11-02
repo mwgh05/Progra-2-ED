@@ -1,0 +1,1 @@
+"Médico", "Ingeniero", "Profesor", "Diseñador", "Enfermero", "Arquitecto", "Contador", "Escritor", "Músico", "Científico", "Abogado", "Policía", "Chef", "Psicólogo", "Periodista", "Astronauta", "Agricultor", "Electricista", "Actor", "Atleta"
