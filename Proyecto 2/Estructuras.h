@@ -17,7 +17,7 @@ vector<string> paises=cargarArchivo("Paises.txt");
 vector<string> creencias=cargarArchivo("Creencias.txt");
 vector<string> profesiones=cargarArchivo("Profesiones.txt");
 string pecados[]={"Lujuria","Gula","Avaricia","Pereza","Ira","Envidia","Soberbia"};
-
+vector<int> ids;
 struct NodoHumano{
     int id;
     string estado;
@@ -29,11 +29,12 @@ struct NodoHumano{
     string nacimiento;
     ListaPecados*listaPecados;
     ListaHumanos*listaAmigos;
-    string redes[7]; //Twiter, Instagram, Netflix, Tinder, Facebook,Linkedin, Pinterest
-    NodoHumano*hijoizq;
+    int redes[7]; //Twiter, Instagram, Netflix, Tinder, Facebook,Linkedin, Pinterest
+    NodoHumano*siguiente;
     NodoHumano*hijoder;
-    NodoHumano(){
-        id=random(9999999);
+    int generacion;
+    NodoHumano(int gen){
+        id=generarId();
         estado="vivo";
         nombre=nombres[random(1000)];
         apellido=apellidos[random(30)];
@@ -48,11 +49,31 @@ struct NodoHumano{
         for(int i=0;i<7;i++){
             redes[i]=random(100);
         }
-        hijoizq=NULL;
+        siguiente=NULL;
         hijoder=NULL;
+        generacion=gen;
         
     }
+
+    bool idusado(int id){
+        for (int i = 0; i < ids.size(); i++) {
+            if (ids[i] == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+    int generarId(){
+        int x=random(9999999);
+        while(idusado(x)){
+            x=random(9999999);
+        }
+        ids.push_back(x);
+        return x;
+    }
 };
+
+int gen=0;
 
 struct ListaHumanos{
     NodoHumano*pn;
@@ -61,15 +82,43 @@ struct ListaHumanos{
     }
     void insertarNodo(NodoHumano*nodo){
         if(pn==NULL){
-            pn=new NodoHumano();
+            pn=new NodoHumano(gen);
         }else{
-
+            NodoHumano*nuevo=new NodoHumano(gen);
+            if(nuevo->id<pn->id){
+                nuevo->siguiente=pn;
+                pn=nuevo;
+            }else{
+                NodoHumano*tmp=pn;
+                while(tmp!=NULL && nuevo->id>tmp->siguiente->id){
+                    tmp=tmp->siguiente;
+                }
+                nuevo->siguiente=tmp->siguiente;
+                tmp->siguiente=nuevo;
+            }
         }
     }
-    ListaHumanos*generarAmigos(){
-        ListaHumanos*amigos;
-        return amigos;
+    ListaHumanos* generarAmigos(NodoHumano*humano) {
+    ListaHumanos* amigos = new ListaHumanos();
+    int cont=random(100);
+    NodoHumano* tmp = pn; 
+
+    while (tmp != nullptr && cont!=0) {
+        if (tmp != humano) {  
+            if (tmp->pais == humano->pais &&
+                (tmp->creencia == humano->creencia || 
+                 tmp->profesion == humano->profesion || 
+                 tmp->apellido == humano->apellido)) {
+                amigos->insertarNodo(tmp);
+            }
+        }
+        cont--;
+        tmp = tmp->siguiente;
     }
+
+    return amigos;
+}
+
 };
 
 struct Nodo{
@@ -136,6 +185,7 @@ int random(int max){
     int numero = distribucion(gen);
     return numero;
 }
+
 
 string trim(string str) {
     size_t first = str.find_first_not_of(' ');
