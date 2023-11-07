@@ -18,6 +18,14 @@ vector<string> paises=cargarArchivo("Paises.txt");
 vector<string> creencias=cargarArchivo("Creencias.txt");
 vector<string> profesiones=cargarArchivo("Profesiones.txt");
 string pecados[]={"Lujuria","Gula","Avaricia","Pereza","Ira","Envidia","Soberbia"};
+string nombredemonios[]={"Asmodeo","Belfegor","Mammon","Abadon","Satan","Belcebu","Lucifer"};
+/*Lucifer: orgullo
+• Belcebú: envidia
+• Satán: ira
+• Abadón: pereza
+• Mammón: codicia
+• Belfegor: glotonería
+• Asmodeo: lujuria*/
 vector<int> ids;
 struct NodoHumano{
     int id;
@@ -216,17 +224,28 @@ struct ListaHumanos{
     }
 
     void publicar(string pais, string apellido, int favoritos){
+        ListaHumanos*familia=buscarFamilia(pais, apellido);
         if(favoritos>7 || favoritos<1){
             cout<<"Debe ser un numero del 1 al 7"<<endl;
         }else{
-            NodoHumano*tmp=pn;
+            NodoHumano*tmp=familia->pn;
             while(tmp!=NULL){
-                if(tmp->pais==pais && tmp->apellido==apellido){
-                    tmp->publicarFav(favoritos);
-                }
+                tmp->publicarFav(favoritos);
                 tmp=tmp->siguiente;
             }
         }
+    }
+
+    ListaHumanos*buscarFamilia(string pais, string apellido){
+        NodoHumano*tmp=pn;
+        ListaHumanos*familia=new ListaHumanos();
+        while(tmp!=NULL){
+            if(tmp->pais==pais && tmp->apellido==apellido){
+                familia->insertarNodo(tmp);
+            }
+            tmp=tmp->siguiente;
+        }
+        return familia;
     }
 };
 
@@ -286,6 +305,26 @@ struct ListaPecados{
             }
     }
 };
+
+struct Demonio{
+    string nombre;
+    string pecado;
+    //string red;
+    //Heap*heap;
+    Demonio(string _nombre, string _pecado){//, string _red){
+        nombre=_nombre;
+        pecado=_pecado;
+        //red=_red;
+    }
+};
+
+Demonio*demonios[7];
+
+void generarDemonios(){
+    for(int i=0; i<7; i++){
+        demonios[i]=new Demonio(nombredemonios[i],pecados[i]);
+    }
+}
 
 int random(int max){
     std::random_device rd;
