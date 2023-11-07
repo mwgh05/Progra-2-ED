@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 #include "Paises.txt"
 #include "Profesiones.txt"
 #include "Creencias.txt"
@@ -71,6 +72,58 @@ struct NodoHumano{
         ids.push_back(x);
         return x;
     }
+    void publicarFav(int n){
+        int numeros[7];
+        for(int i=0;i<7;i++){
+            numeros[i]=redes[i];
+        }
+        int tam = sizeof(numeros) / sizeof(numeros[0]);
+        sort(numeros, numeros + tam, greater<int>());
+        int x=0;
+        while(x<n){
+            for(int i=0; i<7; i++){
+                if(redes[i]==numeros[x]){
+                    sumarPecados(i);
+                    break;
+                }
+            }
+            x++;
+        }
+    }
+    void publicar(int red){ //0 Twiter, 1 Instagram, 2 Netflix, 3 Tinder, 4 Facebook, 5 Linkedin, 6 Pinterest
+        NodoHumano*tmp=listaAmigos->pn;
+        while(tmp!=NULL){
+            tmp->sumarPecados(red);
+            tmp=tmp->siguiente;
+        }
+    }
+    void sumarPecados(int red){
+        int numeros[7];
+        for(int i=0;i<7;i++){
+            numeros[i]=redes[i];
+        }
+        int tam = sizeof(numeros) / sizeof(numeros[0]);
+        sort(numeros, numeros + tam, greater<int>());
+        for(int i=0;i<7;i++){
+            if(i==red){
+                for(int j=0; j<7; j++){
+                    if(redes[i]==numeros[j]){
+                        //redes[i]+=7-j;
+                        int x=i;
+                        Pecado*tmp=listaPecados->pn;
+                        while(x>0){
+                            tmp=tmp->siguiente;
+                            x--;
+                        }
+                        tmp->cantidad+=7-j;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
 };
 
 int gen=0;
@@ -99,26 +152,82 @@ struct ListaHumanos{
         }
     }
     ListaHumanos* generarAmigos(NodoHumano*humano) {
-    ListaHumanos* amigos = new ListaHumanos();
-    int cont=random(100);
-    NodoHumano* tmp = pn; 
+        ListaHumanos* amigos = new ListaHumanos();
+        int cont=random(100);
+        NodoHumano* tmp = pn; 
 
-    while (tmp != nullptr && cont!=0) {
-        if (tmp != humano) {  
-            if (tmp->pais == humano->pais &&
-                (tmp->creencia == humano->creencia || 
-                 tmp->profesion == humano->profesion || 
-                 tmp->apellido == humano->apellido)) {
-                amigos->insertarNodo(tmp);
+        while (tmp != NULL && cont!=0) {
+            if (tmp != humano) {  
+                if (tmp->pais == humano->pais &&
+                    (tmp->creencia == humano->creencia || 
+                    tmp->profesion == humano->profesion || 
+                    tmp->apellido == humano->apellido)) {
+                    amigos->insertarNodo(tmp);
+                }
             }
+            cont--;
+            tmp = tmp->siguiente;
         }
-        cont--;
-        tmp = tmp->siguiente;
+
+        return amigos;
     }
 
-    return amigos;
-}
+    NodoHumano*buscarPorId(int _id){
+        NodoHumano*tmp=pn;
+        while(tmp!=NULL){
+            if(tmp->id==_id){
+                return tmp;
+            }
+            tmp=tmp->siguiente;
+        }
+        cout<<"No se encontro el humano con id: "<<_id<<endl;
+        return NULL;
+    }
 
+    void publicar(int _id, int red){
+        NodoHumano*humano=buscarPorId(_id);
+        if(humano!=NULL){
+            humano->publicar(red);
+        }
+    }
+    
+    void publicar(string religion){
+        NodoHumano*tmp=pn;
+        while(tmp!=NULL){
+            if(tmp->creencia==religion){
+                tmp->publicarFav(1);
+            }
+            tmp=tmp->siguiente;
+        }
+    }
+
+    void publicar(string profesion, int favoritos){
+        if(favoritos>7 || favoritos<1){
+            cout<<"Debe ser un numero del 1 al 7"<<endl;
+        }else{
+            NodoHumano*tmp=pn;
+            while(tmp!=NULL){
+                if(tmp->profesion==profesion){
+                    tmp->publicarFav(favoritos);
+                }
+                tmp=tmp->siguiente;
+            }
+        }
+    }
+
+    void publicar(string pais, string apellido, int favoritos){
+        if(favoritos>7 || favoritos<1){
+            cout<<"Debe ser un numero del 1 al 7"<<endl;
+        }else{
+            NodoHumano*tmp=pn;
+            while(tmp!=NULL){
+                if(tmp->pais==pais && tmp->apellido==apellido){
+                    tmp->publicarFav(favoritos);
+                }
+                tmp=tmp->siguiente;
+            }
+        }
+    }
 };
 
 struct Nodo{
