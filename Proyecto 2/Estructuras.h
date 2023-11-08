@@ -54,7 +54,6 @@ struct NodoHumano{
         auto now_time = std::chrono::system_clock::to_time_t(now);
         nacimiento=ctime(&now_time);
         listaPecados=new ListaPecados();
-        //listaAmigos=generarAmigos();
         for(int i=0;i<7;i++){
             redes[i]=random(100);
         }
@@ -142,10 +141,11 @@ struct ListaHumanos{
         pn=NULL;
     }
     void insertarNodo(NodoHumano*nodo){
+        NodoHumano*nuevo=new NodoHumano(gen);
+        generarAmigos(nuevo);
         if(pn==NULL){
-            pn=new NodoHumano(gen);
+            pn=nuevo;
         }else{
-            NodoHumano*nuevo=new NodoHumano(gen);
             if(nuevo->id<pn->id){
                 nuevo->siguiente=pn;
                 pn=nuevo;
@@ -159,7 +159,7 @@ struct ListaHumanos{
             }
         }
     }
-    ListaHumanos* generarAmigos(NodoHumano*humano) {
+    void generarAmigos(NodoHumano*humano) {
         ListaHumanos* amigos = new ListaHumanos();
         int cont=random(100);
         NodoHumano* tmp = pn; 
@@ -176,8 +176,7 @@ struct ListaHumanos{
             cont--;
             tmp = tmp->siguiente;
         }
-
-        return amigos;
+        humano->listaAmigos=amigos;
     }
 
     NodoHumano*buscarPorId(int _id){
