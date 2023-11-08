@@ -29,7 +29,7 @@ string nombredemonios[]={"Asmodeo","Belfegor","Mammon","Abadon","Satan","Belcebu
 vector<int> ids;
 struct NodoHumano{
     int id;
-    string estado;
+    string estado; //vivo, infierno, cielo
     string nombre;
     string apellido;
     string pais;
@@ -40,7 +40,7 @@ struct NodoHumano{
     ListaHumanos*listaAmigos;
     int redes[7]; //Twiter, Instagram, Netflix, Tinder, Facebook,Linkedin, Pinterest
     NodoHumano*siguiente;
-    NodoHumano*hijoder;
+    //NodoHumano*hijoder;
     int generacion;
     NodoHumano(int gen){
         id=generarId();
@@ -58,7 +58,7 @@ struct NodoHumano{
             redes[i]=random(100);
         }
         siguiente=NULL;
-        hijoder=NULL;
+        //hijoder=NULL;
         generacion=gen;
         
     }
@@ -80,6 +80,7 @@ struct NodoHumano{
         return x;
     }
     void publicarFav(int n){
+        if(estado=="vivo"){
         int numeros[7];
         for(int i=0;i<7;i++){
             numeros[i]=redes[i];
@@ -96,6 +97,7 @@ struct NodoHumano{
             }
             x++;
         }
+        }
     }
     void publicar(int red){ //0 Twiter, 1 Instagram, 2 Netflix, 3 Tinder, 4 Facebook, 5 Linkedin, 6 Pinterest
         NodoHumano*tmp=listaAmigos->pn;
@@ -105,6 +107,7 @@ struct NodoHumano{
         }
     }
     void sumarPecados(int red){
+        if(estado=="vivo"){
         int numeros[7];
         for(int i=0;i<7;i++){
             numeros[i]=redes[i];
@@ -128,6 +131,7 @@ struct NodoHumano{
                 }
                 break;
             }
+        }
         }
     }
 
@@ -190,11 +194,22 @@ struct ListaHumanos{
         cout<<"No se encontro el humano con id: "<<_id<<endl;
         return NULL;
     }
-
+    
+    void imprimirIds(){
+        NodoHumano*tmp=pn;
+        while(tmp!=NULL){
+            cout<<tmp->id<<endl;
+            tmp=tmp->siguiente;
+        }
+    }
     void publicar(int _id, int red){
         NodoHumano*humano=buscarPorId(_id);
         if(humano!=NULL){
-            humano->publicar(red);
+            if(humano->estado=="vivo"){
+                humano->publicar(red);
+            }else{
+                cout<<"El humano "<<humano->nombre<<" "<<humano->apellido<<" de id "<<humano->id<<" esta muerto."<<endl;
+            }
         }
     }
     
@@ -206,6 +221,7 @@ struct ListaHumanos{
             }
             tmp=tmp->siguiente;
         }
+        cout<<"Todos los humanos con religion: "<<religion<<", publicaron en su red social favorita."<<endl;
     }
 
     void publicar(string profesion, int favoritos){
@@ -220,6 +236,7 @@ struct ListaHumanos{
                 tmp=tmp->siguiente;
             }
         }
+        cout<<"Todos los humanos con profesion: "<<profesion<<", publicaron en sus "<<favoritos<<" redes sociales favoritas."<<endl;
     }
 
     void publicar(string pais, string apellido, int favoritos){
@@ -233,6 +250,7 @@ struct ListaHumanos{
                 tmp=tmp->siguiente;
             }
         }
+        cout<<"La familia "<<apellido<<" de "<<pais<<" ha publicado en sus "<<favoritos<<" redes sociales favoritas."<<endl;
     }
 
     ListaHumanos*buscarFamilia(string pais, string apellido){
@@ -245,6 +263,56 @@ struct ListaHumanos{
             tmp=tmp->siguiente;
         }
         return familia;
+    }
+
+    void publicar(){
+        cout<<"PUBLICAR"<<endl;
+        string x;
+        int red;
+        cout<<"1. Seleccionar un humano."<<endl;
+        cout<<"2. Seleccionar por religion."<<endl;
+        cout<<"3. Seleccionar por profesion."<<endl;
+        cout<<"4. Seleccionar por familia."<<endl;
+        cout<<"Digite su opcion: "<<endl;
+        getline(cin,x);
+        if(x=="1"){
+            cout<<"Seleccionar un humano."<<endl;
+            imprimirIds();
+            string id;
+            cout<<"Digite el id: "<<endl;
+            getline(cin,id);
+            red=seleccionarRed();
+            publicar(stoi(id),red);
+        }else if(x=="2"){
+            cout<<"Seleccionar por religion."<<endl;
+            string religion;
+            cout<<"Seleccione la religion: "<<endl;
+            religion=seleccionarDeVector(creencias);
+            publicar(religion);
+        }else if(x=="3"){
+            cout<<"Seleccionar por profesion."<<endl;
+            string prof;
+            cout<<"Seleccione la profesion: "<<endl;
+            prof=seleccionarDeVector(profesiones);
+            string n;
+            cout<<"A cuantas redes favoritas desea publicar?: "<<endl;
+            getline(cin,n);
+            publicar(prof,stoi(n));
+        }else if(x=="4"){
+            cout<<"Seleccionar por familia."<<endl;
+            string apellido;
+            string pais;
+            string n;
+            cout<<"Seleccione el pais: "<<endl;
+            pais=seleccionarDeVector(paises);
+            cout<<"Seleccione el apellido: "<<endl;
+            apellido=seleccionarDeVector(apellidos);
+            cout<<"A cuantas redes favoritas desea publicar?: "<<endl;
+            getline(cin,n);
+            publicar(pais,apellido,stoi(n));
+        }else{
+            cout<<"Debe ingresar un numero del 1 al 4."<<endl;
+        }
     }
 };
 
@@ -356,4 +424,34 @@ vector<string> cargarArchivo(string nombreArchivo) {
         archivo.close();
     }
     return palabras;
+}
+
+int seleccionarRed(){ //0 Twiter, 1 Instagram, 2 Netflix, 3 Tinder, 4 Facebook, 5 Linkedin, 6 Pinterest
+    string x;
+    cout<<"1. Twitter"<<endl;
+    cout<<"2. Instagram"<<endl;
+    cout<<"3. Netflix"<<endl;
+    cout<<"4. Tinder"<<endl;
+    cout<<"5. Facebook"<<endl;
+    cout<<"6. LinkedIn"<<endl;
+    cout<<"7. Pinterest"<<endl;
+    cout<<"Digite el numero de red: "<<endl;
+    getline(cin,x);
+    return stoi(x);
+}
+
+string seleccionarDeVector(vector <string> vector){
+    for (int i = 0; i < vector.size(); i++) {
+        cout << i << ". " << vector[i] <<endl;
+    }
+
+    int opcion;
+    std::cout << "Escriba el número de la opción que desea seleccionar: ";
+    cin >> opcion;
+
+    if (opcion >= 0 && opcion < vector.size()) {
+        return vector[opcion];
+    } else {
+        return "Opción no válida"; 
+    }
 }
