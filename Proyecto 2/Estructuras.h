@@ -144,6 +144,7 @@ struct ListaHumanos{
     ListaHumanos(){
         pn=NULL;
     }
+    
     void insertarNodo(NodoHumano*nodo){
         NodoHumano*nuevo=new NodoHumano(gen);
         generarAmigos(nuevo);

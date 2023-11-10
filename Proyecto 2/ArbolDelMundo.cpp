@@ -1,4 +1,5 @@
-#include<iostream>
+#include <iostream>
+#include "Estructuras.h"
 #define SPACE 10
 
 using namespace std;
@@ -62,6 +63,7 @@ class BST {
       }
     }
   }
+
   	TreeNode* insertRecursive(TreeNode *r, TreeNode *new_node)
 	{
 		if(r==NULL)
@@ -122,6 +124,7 @@ class BST {
     /* now recur on right child */
     printInorder(r -> right);
   }
+
   void printPostorder(TreeNode * r) //(Left, Right, Root)
   {
     if (r == NULL)
@@ -247,14 +250,30 @@ class BST {
 
 };
 
+void incertarhumanoslista(int cantidad, ListaHumanos listadehumanos, BST arbolmundo){
+  NodoHumano * humano = new NodoHumano(gen);
+  int nuevosnodos = cantidad / 100;
+  while(cantidad != 0){
+    listadehumanos.insertarNodo(humano);
+    cantidad--;
+  }
+  TreeNode * new_node = new TreeNode();
+  while(nuevosnodos > 0){
+    //new_node->value = val;
+	  arbolmundo.root= arbolmundo.insertRecursive(arbolmundo.root,new_node);
+  }
+}
+
 int main() {
   BST obj;
-  int option, val;
+  ListaHumanos objHuman;
+
+  int option, val, gen = 0;
 
   do {
     cout << "What operation do you want to perform? " <<
       " Select Option number. Enter 0 to exit." << endl;
-    cout << "1. Insert Node" << endl;
+    cout << "Incertar humanos" << endl;
     cout << "2. Search Node" << endl;
     cout << "3. Delete Node" << endl;
     cout << "4. Print/Traversal BST values" << endl;
@@ -271,11 +290,13 @@ int main() {
       break;
     case 1:
       	cout <<"INSERT"<<endl;
-	      cout <<"Enter VALUE of TREE NODE to INSERT in BST: ";
+	      cout <<"Cantida de humanos a incertar: ";
 	      cin >> val;
-	      new_node->value = val;
-	      obj.root= obj.insertRecursive(obj.root,new_node);
-	      //obj.insertNode(new_node);
+        incertarhumanoslista(val, objHuman, obj);
+
+	      //new_node->value = val;
+	      //obj.root= obj.insertRecursive(obj.root,new_node);
+
 	      cout<<endl;
     		break;
       
