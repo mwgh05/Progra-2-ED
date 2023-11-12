@@ -7,87 +7,85 @@ using namespace std;
 class TreeNode {
   public:
     int value;
-  TreeNode * left;
-  TreeNode * right;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode *parent; // Nuevo puntero al nodo padre
 
-  TreeNode() {
-    value = 0;
-    left = NULL;
-    right = NULL;
-  }
-  TreeNode(int v) {
-    value = v;
-    left = NULL;
-    right = NULL;
-  }
+    TreeNode() {
+      value = 0;
+      left = NULL;
+      right = NULL;
+      parent = NULL; // Inicializar el puntero al padre
+    }
+    
+    TreeNode(int v) {
+      value = v;
+      left = NULL;
+      right = NULL;
+      parent = NULL;
+    }
 };
 
 class BST {
   public:
-    TreeNode * root;
+    TreeNode *root;
+
   BST() {
     root = NULL;
   }
+
   bool isTreeEmpty() {
-    if (root == NULL) {
-      return true;
-    } else {
-      return false;
-    }
+    return root == NULL;
   }
 
-  void insertNode(TreeNode * new_node) {
+  void insertNode(TreeNode *new_node) {
     if (root == NULL) {
       root = new_node;
       cout << "Value Inserted as root node!" << endl;
     } else {
-      TreeNode * temp = root;
+      TreeNode *temp = root;
       while (temp != NULL) {
-        if (new_node -> value == temp -> value) {
-          cout << "Value Already exist," <<
-            "Insert another value!" << endl;
+        if (new_node->value == temp->value) {
+          cout << "Value Already exists, Insert another value!" << endl;
           return;
-        } else if ((new_node -> value < temp -> value) && (temp -> left == NULL)) {
-          temp -> left = new_node;
+        } else if ((new_node->value < temp->value) && (temp->left == NULL)) {
+          temp->left = new_node;
+          new_node->parent = temp; // Asignar el puntero al padre
           cout << "Value Inserted to the left!" << endl;
           break;
-        } else if (new_node -> value < temp -> value) {
-          temp = temp -> left;
-        } else if ((new_node -> value > temp -> value) && (temp -> right == NULL)) {
-          temp -> right = new_node;
+        } else if (new_node->value < temp->value) {
+          temp = temp->left;
+        } else if ((new_node->value > temp->value) && (temp->right == NULL)) {
+          temp->right = new_node;
+          new_node->parent = temp; // Asignar el puntero al padre
           cout << "Value Inserted to the right!" << endl;
           break;
         } else {
-          temp = temp -> right;
+          temp = temp->right;
         }
       }
     }
   }
 
-  	TreeNode* insertRecursive(TreeNode *r, TreeNode *new_node)
-	{
-		if(r==NULL)
-		{
-			r=new_node;
-			cout <<"Insertion successful"<<endl;
-			return r;
-		}
-	
-		if(new_node->value < r->value)
-		{
-			r->left = insertRecursive(r->left,new_node);
-		}
-		else if (new_node->value > r->value)  
-		{
-			r->right = insertRecursive(r->right,new_node);
-		}
-	   else
-	   {
-	     	cout << "No duplicate values allowed!" << endl;
-	     	return r; 
-		}
-		return r;
-	}
+  TreeNode *insertRecursive(TreeNode *r, TreeNode *new_node) {
+    if (r == NULL) {
+      r = new_node;
+      cout << "Insertion successful" << endl;
+      return r;
+    }
+
+    if (new_node->value < r->value) {
+      r->left = insertRecursive(r->left, new_node);
+      new_node->parent = r; // Asignar el puntero al padre
+    } else if (new_node->value > r->value) {
+      r->right = insertRecursive(r->right, new_node);
+      new_node->parent = r; // Asignar el puntero al padre
+    } else {
+      cout << "No duplicate values allowed!" << endl;
+      return r;
+    }
+    return r;
+  }
 
   void print2D(TreeNode * r, int space) {
     if (r == NULL) // Base case  1
@@ -250,17 +248,54 @@ class BST {
 
 };
 
+int ObtenerValor_Aux(TreeNode * r);
+int ObtenerValor(TreeNode * r);
+
 void incertarhumanoslista(int cantidad, ListaHumanos listadehumanos, BST arbolmundo){
   NodoHumano * humano = new NodoHumano(gen);
-  int nuevosnodos = cantidad / 100;
+  int nuevosnodos = abs(cantidad / 100);
   while(cantidad != 0){
     listadehumanos.insertarNodo(humano);
     cantidad--;
   }
   TreeNode * new_node = new TreeNode();
+  int val = 1;
   while(nuevosnodos > 0){
-    //new_node->value = val;
+    new_node->value = ObtenerValor(arbolmundo.root);
 	  arbolmundo.root= arbolmundo.insertRecursive(arbolmundo.root,new_node);
+    nuevosnodos--;
+  }
+}
+
+int ObtenerValor(TreeNode * r){
+  if (r == NULL) {
+      return 50000;
+    }
+  else if (r -> left == NULL) {
+    return 25000;
+  }
+  else if (r -> right == NULL) {
+    return 75000;
+  }
+  else{
+    return ObtenerValor_Aux(r);
+  }
+}
+
+int ObtenerValor_Aux(TreeNode * r){
+  if (r->left == NULL || r->right == NULL){
+    //250 < 500 entonces |parent-hijo/2|
+    if(r->value < r->parent->value){
+      return abs((r->parent->value - r->value) / 2);
+    }
+    //750 > 500 entonces |hijo-parent/2|
+    else if(r->value > r->parent->value){
+      return abs((r->value - r->parent->value) / 2);
+    }
+  }
+  else{
+    ObtenerValor_Aux(r->left);
+    ObtenerValor_Aux(r->right);
   }
 }
 
@@ -273,7 +308,7 @@ int main() {
   do {
     cout << "What operation do you want to perform? " <<
       " Select Option number. Enter 0 to exit." << endl;
-    cout << "Incertar humanos" << endl;
+    cout << "1. Incertar humanos" << endl;
     cout << "2. Search Node" << endl;
     cout << "3. Delete Node" << endl;
     cout << "4. Print/Traversal BST values" << endl;
