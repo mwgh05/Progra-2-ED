@@ -1,16 +1,57 @@
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <chrono>
 #include <random>
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <queue>
 #include "Paises.txt"
-#include "Profesiones.txt"
-#include "Creencias.txt"
-#include "Nombres.txt"
-#include "Apellidos.txt"
+
+//#include "httplib.h"
 
 using namespace std;
+
+struct ListaPecados;
+struct ListaHumanos;
+struct Pecado;
+struct ListaPecados;
+
+string obtenerFechaYHoraActual() {
+    auto now = chrono::system_clock::now();
+    time_t now_time = chrono::system_clock::to_time_t(now);
+
+    tm local_tm = *localtime(&now_time);
+
+    ostringstream formattedDateTime;
+    formattedDateTime << put_time(&local_tm, "%Y%m%d_%H%M%S");
+
+    return formattedDateTime.str();
+}
+
+vector<string> cargarArchivo(string nombreArchivo) {
+    vector<string> palabras;
+    ifstream archivo(nombreArchivo);
+    if (archivo.is_open()) {
+        string palabra;
+        while (getline(archivo, palabra, ',')) {
+            palabra.erase(0, palabra.find_first_not_of(" \"'"));
+            palabra.erase(palabra.find_last_not_of(" \"'") + 1);
+            palabras.push_back(palabra);
+        }
+        archivo.close();
+    }
+    return palabras;
+}
+
+int random(int max) {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> distribucion(0, max);
+    int numero = distribucion(gen);
+    return numero;
+}
 
 vector<string> nombres=cargarArchivo("Nombres.txt");
 vector<string> apellidos=cargarArchivo("Apellidos.txt");
@@ -42,7 +83,8 @@ struct NodoHumano{
     NodoHumano*siguiente;
     //NodoHumano*hijoder;
     int generacion;
-    NodoHumano(int gen){
+    NodoHumano(){
+        generacion=0;
         id=generarId();
         estado="vivo";
         nombre=nombres[random(1000)];
@@ -50,16 +92,13 @@ struct NodoHumano{
         pais=paises[random(20)];
         creencia=creencias[random(10)];
         profesion=profesiones[random(20)];
-        auto now = std::chrono::system_clock::now();
-        auto now_time = std::chrono::system_clock::to_time_t(now);
-        nacimiento=ctime(&now_time);
+        nacimiento=obtenerFechaYHoraActual();
         listaPecados=new ListaPecados();
+        listaAmigos=NULL;
         for(int i=0;i<7;i++){
             redes[i]=random(100);
         }
         siguiente=NULL;
-        //hijoder=NULL;
-        generacion=gen;
         
     }
 
@@ -78,6 +117,36 @@ struct NodoHumano{
         }
         ids.push_back(x);
         return x;
+    }
+    Pecado* mayorPecado(){
+        Pecado*tmp=listaPecados->pn->siguiente;
+        Pecado*mayor=listaPecados->pn;
+        while(tmp!=NULL){
+            if(tmp->cantidad>mayor->cantidad){
+                mayor=tmp;
+            }
+            tmp=tmp->siguiente;
+        }
+        return mayor;
+    }
+    int obtenerCantidadPecado(string nombrePecado) {
+        Pecado* tmp = listaPecados->pn;
+        while (tmp != NULL) {
+            if (tmp->nombre == nombrePecado) {
+                return tmp->cantidad;
+            }
+            tmp = tmp->siguiente;
+        }
+        return 0;
+    }
+    int obtenerCantidadPecados() {
+        Pecado* tmp = listaPecados->pn;
+        int cont=0;
+        while (tmp != NULL) {
+            cont+=tmp->cantidad;    
+            tmp = tmp->siguiente;
+        }
+        return cont;
     }
     void publicarFav(int n){
         if(estado=="vivo"){
@@ -134,35 +203,72 @@ struct NodoHumano{
         }
         }
     }
+    void imprimirAmigos(){
+        NodoHumano*tmp=listaAmigos->pn;
+        cout<<"[";
+        while(tmp!=NULL){
+            cout<<tmp->id<<",";
+        }
+        cout<<"]"<<endl;
+    }
+    void imprimir(){
+        cout<<id<<endl;
+        cout<<nombre<<endl;
+        cout<<apellido<<endl;
+        cout<<estado<<endl;
+        cout<<"\n";
+        cout<<pais<<endl;
+        cout<<creencia<<endl;
+        cout<<profesion<<endl;
+        listaPecados->imprimir();
+        cout<<"Amigos";
+        imprimirAmigos();
+        cout<<"Redes";
+        cout<<"[";
+        for(int i=0; i<7; i++){
+            cout<<redes[i]<<",";
+        }
+        cout<<"]"<<endl;
+    }
 
 };
 
-int gen=0;
 
 struct ListaHumanos{
+    int gen=0;
     NodoHumano*pn;
     ListaHumanos(){
         pn=NULL;
     }
     
     void insertarNodo(NodoHumano*nodo){
-        NodoHumano*nuevo=new NodoHumano(gen);
-        generarAmigos(nuevo);
+        //NodoHumano*nuevo=new NodoHumano();
+        if(nodo->listaAmigos==NULL){
+            generarAmigos(nodo);
+        }
         if(pn==NULL){
-            pn=nuevo;
+            pn=nodo;
         }else{
-            if(nuevo->id<pn->id){
-                nuevo->siguiente=pn;
-                pn=nuevo;
+            if(nodo->id<pn->id){
+                nodo->siguiente=pn;
+                pn=nodo;
             }else{
                 NodoHumano*tmp=pn;
-                while(tmp!=NULL && nuevo->id>tmp->siguiente->id){
+                while(tmp!=NULL && nodo->id>tmp->siguiente->id){
                     tmp=tmp->siguiente;
                 }
-                nuevo->siguiente=tmp->siguiente;
-                tmp->siguiente=nuevo;
+                nodo->siguiente=tmp->siguiente;
+                tmp->siguiente=nodo;
             }
         }
+    }
+    void crearHumanos(int n){
+        for(int i=0; i<=n; i++){
+            NodoHumano*nuevo=new NodoHumano();
+            nuevo->generacion=gen;
+            insertarNodo(nuevo);
+        }
+        gen++;
     }
     void generarAmigos(NodoHumano*humano) {
         ListaHumanos* amigos = new ListaHumanos();
@@ -195,11 +301,32 @@ struct ListaHumanos{
         cout<<"No se encontro el humano con id: "<<_id<<endl;
         return NULL;
     }
+    int mostrarVivos(){
+        int cont=0;
+        NodoHumano*tmp=pn;
+        while(tmp!=NULL){
+            if(tmp->estado=="vivo"){
+                cont++;
+            }
+            tmp=tmp->siguiente;
+        }
+        return cont;
+    }
+    void buscarPorId(int _id, string nombre, string apellido){
+        NodoHumano*tmp=pn;
+        while(tmp!=NULL){
+            if(tmp->id==_id && tmp->nombre==nombre &&  tmp->apellido==apellido){
+                tmp->imprimir();
+            }
+            tmp=tmp->siguiente;
+        }
+        cout<<"No se encontro el humano con id: "<<_id<<endl;
+    }
     
     void imprimirIds(){
         NodoHumano*tmp=pn;
         while(tmp!=NULL){
-            cout<<tmp->id<<endl;
+            cout<<tmp->id<<": "<<tmp->nombre<<" "<<tmp->apellido<<endl;
             tmp=tmp->siguiente;
         }
     }
@@ -241,29 +368,56 @@ struct ListaHumanos{
     }
 
     void publicar(string pais, string apellido, int favoritos){
-        ListaHumanos*familia=buscarFamilia(pais, apellido);
+        vector<NodoHumano*> familia=buscarFamilia(pais, apellido);
         if(favoritos>7 || favoritos<1){
             cout<<"Debe ser un numero del 1 al 7"<<endl;
         }else{
-            NodoHumano*tmp=familia->pn;
-            while(tmp!=NULL){
-                tmp->publicarFav(favoritos);
-                tmp=tmp->siguiente;
+            for (int i = 0; i < familia.size(); i++) {
+                familia[i]->publicarFav(favoritos);
             }
         }
         cout<<"La familia "<<apellido<<" de "<<pais<<" ha publicado en sus "<<favoritos<<" redes sociales favoritas."<<endl;
     }
 
-    ListaHumanos*buscarFamilia(string pais, string apellido){
-        NodoHumano*tmp=pn;
-        ListaHumanos*familia=new ListaHumanos();
-        while(tmp!=NULL){
-            if(tmp->pais==pais && tmp->apellido==apellido){
-                familia->insertarNodo(tmp);
+    vector<NodoHumano*> buscarFamilia(string pais, string apellido) {
+        NodoHumano* tmp = pn;
+        vector<NodoHumano*> familia;
+    
+        while (tmp != NULL) {
+            if (tmp->pais == pais && tmp->apellido == apellido) {
+                
+                familia.push_back(tmp);
             }
-            tmp=tmp->siguiente;
+            tmp = tmp->siguiente;
         }
+    
         return familia;
+    }
+
+    void mostrarfamilia(){
+        string apellido;
+        string pais;
+        cout<<"Ingrese el pais: ";
+        getline(cin, pais);
+        cout<<"Ingrese en apellido: ";
+        getline(cin, apellido);
+        vector<NodoHumano*> familia=buscarFamilia(pais,apellido);
+        vector<NodoHumano*> cielo;
+        vector<NodoHumano*> vivos;
+        vector<NodoHumano*> infierno;
+        for(int i=0; i<familia.size(); i++){
+            familia[i]->imprimir();
+            if(familia[i]->estado=="vivo"){
+                vivos.push_back(familia[i]);
+            }else if(familia[i]->estado=="cielo"){
+                cielo.push_back(familia[i]);
+            }else if(familia[i]->estado=="infierno"){
+                infierno.push_back(familia[i]);
+            }
+        }
+        cout<<"Infierno: "<<infierno.size()*100/familia.size()<<"%"<<endl;
+        cout<<"Cielo: "<<cielo.size()*100/familia.size()<<"%"<<endl;
+        cout<<"Vivos: "<<vivos.size()*100/familia.size()<<"%"<<endl;
     }
 
     void publicar(){
@@ -315,14 +469,57 @@ struct ListaHumanos{
             cout<<"Debe ingresar un numero del 1 al 4."<<endl;
         }
     }
+
+    vector<NodoHumano*> ordenarPorPecado(string nombrePecado) {
+        vector<NodoHumano*> humanos;        
+        NodoHumano* tmp = pn;
+        while (tmp != NULL) {
+            ListaPecados* listaPecados = tmp->listaPecados;
+            Pecado* pecado = listaPecados->pn;
+            while (pecado != NULL) {
+                if (pecado->nombre == nombrePecado) {
+                    humanos.push_back(tmp);
+                    break;
+                }
+                pecado = pecado->siguiente;
+            }
+            tmp = tmp->siguiente;
+        }
+        sort(humanos.begin(), humanos.end(), [nombrePecado](NodoHumano* a, NodoHumano* b) {
+            int cantidadA = a->obtenerCantidadPecado(nombrePecado);
+            int cantidadB = b->obtenerCantidadPecado(nombrePecado);
+            return cantidadA > cantidadB;
+        });
+        
+        return humanos;
+    }
+    
+    void buscarHumano(){
+        cout<<"BUSCAR HUMANO"<<endl;
+        string nombre;
+        string apellido;
+        imprimirIds();
+        int x;
+        cout<<"Digite el ID: ";
+        cin>>x;
+        cout<<"Digite el nombre: ";
+        cin>>nombre;
+        cout<<"Digite el apellido: ";
+        cin>>apellido;
+        buscarPorId(x, nombre, apellido);
+        //buscado->imprimir();
+
+    }
 };
 
+//ListaHumanos*listaHumanos=new ListaHumanos();
+
 struct Nodo{
-    int valor;
+    NodoHumano* humano;
     Nodo*hijoizq;
     Nodo*hijoder;
-    Nodo(int _valor){
-        valor=_valor;
+    Nodo(NodoHumano*_humano){
+        humano=_humano;
         hijoizq=NULL;
         hijoder=NULL;
     }
@@ -332,12 +529,17 @@ struct ArbolHumanos{
     ArbolHumanos(){
         raiz=NULL;
     }
-    void insertar(int dato,Nodo*nodo,ArbolHumanos*arbol){
-        if(nodo==NULL){
-            nodo=new Nodo(dato);
-        }else if(nodo->valor<dato){
-            insertar(dato,nodo->hijoder,arbol);
+    /*void crearHumanos(int n){
+        for(int i=0; i<=n; i++){
+            NodoHumano*nuevo=new NodoHumano();
+            nuevo->generacion=gen;
+            insertarNodo(nuevo);
         }
+        gen++;
+    }*/
+    void crearHumanos(ListaHumanos*listahumanos, int n){
+        listahumanos->crearHumanos(n);
+
     }
 };
 
@@ -372,35 +574,431 @@ struct ListaPecados{
                 pn=nuevo;
             }
     }
-};
 
-struct Demonio{
-    string nombre;
-    string pecado;
-    //string red;
-    //Heap*heap;
-    Demonio(string _nombre, string _pecado){//, string _red){
-        nombre=_nombre;
-        pecado=_pecado;
-        //red=_red;
+    void imprimir(){
+        Pecado*tmp=pn;
+        cout<<"[";
+        while(tmp!=NULL){
+            cout<<tmp->nombre<<"("<<tmp->cantidad<<")"<<",";
+        }
+        cout<<"]"<<endl;
     }
 };
 
-Demonio*demonios[7];
+struct NodoHeap{
+    vector<NodoHumano*> familia;
+    string apellido;
+    string pais;
+    string pecado;
+    NodoHeap*siguiente;
+    NodoHeap(){
+        siguiente=NULL;
+    }
+    void insertarHumano(NodoHumano*humano){
+        if(apellido==""){
+            apellido=humano->apellido;
+        }
+        if(pais==""){
+            pais=humano->pais;
+        }
+        humano->estado="infierno";
+        familia.push_back(humano);
+    }
+    int numeroPecados(){
+        int cont=0;
+        for(int i=0; i<familia.size(); i++){
+            Pecado*pecado=familia[i]->mayorPecado();
+            cont+=pecado->cantidad;
+        }
+        return cont;
+    }
+};
 
+struct Heap{
+    NodoHeap*pn;
+    Heap(){
+        pn=NULL;
+    }
+
+    int tamano(){
+        int cont=0;
+        NodoHeap*tmp=pn;
+        while(tmp!=NULL){
+            cont++;
+            tmp=tmp->siguiente;
+        }
+        return cont;
+    }
+    bool compararFamilias(NodoHeap* a, NodoHeap* b) {
+        return a->numeroPecados() > b->numeroPecados();
+    }
+
+    void ordenar() {
+        vector<NodoHeap*> familias;
+        NodoHeap* tmp = pn;
+        while (tmp != NULL) {
+            familias.push_back(tmp);
+            tmp = tmp->siguiente;
+        }
+        make_heap(familias.begin(), familias.end(), compararFamilias);
+        sort_heap(familias.begin(), familias.end(), compararFamilias);
+        pn = NULL;
+        for (NodoHeap* familia : familias) {
+            familia->siguiente = pn;
+            pn = familia;
+        }
+    }
+
+    void insertar(NodoHumano*humano){
+        if(pn==NULL){
+            pn->insertarHumano(humano);
+        }else{
+            NodoHeap*tmp=pn;
+            while(tmp!=NULL){
+                if(tmp->apellido==humano->apellido && tmp->pais==humano->pais){
+                    tmp->insertarHumano(humano);
+                    ordenar();
+                    break;
+                }
+                tmp=tmp->siguiente;
+            }
+            if(tmp==NULL){
+                tmp=new NodoHeap();
+                tmp->insertarHumano(humano);
+                ordenar();
+            }           
+        }
+    }
+    vector<NodoHumano*> obtenerHumanosOrdenados() {
+    std::vector<NodoHumano*> humanos;
+    NodoHeap* tmp = pn;
+    while (tmp != nullptr) {
+        for (NodoHumano* humano : tmp->familia) {
+            humanos.push_back(humano);
+        }
+        tmp = tmp->siguiente;
+    }
+
+    std::sort(humanos.begin(), humanos.end(), [](NodoHumano* a, NodoHumano* b) {
+        int cantidadA = a->mayorPecado()->cantidad;
+        int cantidadB = b->mayorPecado()->cantidad;
+        return cantidadA > cantidadB;
+    });
+
+    return humanos;
+}
+};
+string archivosCondenacion() {
+    string fechaHora = obtenerFechaYHoraActual();
+    string nombreArchivo = "Condenacion_"+fechaHora + ".txt";
+    ofstream archivoSalida(nombreArchivo);
+    if (archivoSalida.is_open()) {
+        archivoSalida << "INFIERNO\n";
+        archivoSalida << "Fecha y hora de creación: " << fechaHora << "\n";
+        archivoSalida.close();
+        cout << "Archivo de condenación creado exitosamente.\n";
+    } else {
+        cerr << "Error al abrir el archivo.\n";
+    }
+    return nombreArchivo;
+}
+void escribirEnArchivo(string nombreArchivo, string contenido) {
+    std::ofstream archivo(nombreArchivo, std::ios::app);
+
+    if (!archivo.is_open()) {
+        std::cerr << "No se pudo abrir el archivo." << std::endl;
+        return;
+    }
+
+    archivo << contenido << std::endl;
+
+    std::cout << "Contenido agregado al archivo." << std::endl;
+    archivo.close();
+}
+string fecha() {
+    std::time_t now = std::time(nullptr);
+    std::tm* localTime = std::localtime(&now);
+
+    int year = localTime->tm_year + 1900;
+    int month = localTime->tm_mon + 1;
+    int day = localTime->tm_mday;
+
+    std::ostringstream formattedDate;
+    formattedDate << year << '-' << month << '-' << day;
+
+    return formattedDate.str();
+}
+string obtenerHoraActual() {
+    std::time_t now = std::time(nullptr);
+    std::tm* localTime = std::localtime(&now);
+
+    int hour = localTime->tm_hour;
+    int minute = localTime->tm_min;
+    int second = localTime->tm_sec;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << hour << ':'
+        << std::setfill('0') << std::setw(2) << minute << ':'
+        << std::setfill('0') << std::setw(2) << second;
+
+    return oss.str();
+}
+struct Demonio{
+    string nombre;
+    string pecado;
+    Heap*heap;
+    Demonio(string _nombre, string _pecado){
+        heap=new Heap();
+        nombre=_nombre;
+        pecado=_pecado;
+    }
+
+    void condenar(ListaHumanos*listahumanos){
+        int x;
+        string archivo=archivosCondenacion();
+        vector<NodoHumano*> pecadores=listahumanos->ordenarPorPecado(pecado);
+        x=pecadores.size()/500;
+        for(int i=0; i<(pecadores.size()/500); i++){
+            if(pecadores[i]->estado=="vivo"){
+                heap->insertar(pecadores[i]);
+                string texto=fecha()+obtenerHora()+"\t Humano "+to_string(i)+pecadores[i]->nombre+pecadores[i]->apellido+"\t"+pecadores[i]->pais+" Murió el "+fecha()+" condenado por "+to_string(pecadores[i]->mayorPecado()->cantidad)+" pecados de "+pecado+" por el demonio "+nombre+"\t";
+                escribirEnArchivo(archivo, texto);
+            }
+        }
+        cout<<"El demonio "<<nombre<<" ha condenado a "<<x<<" humanos."<<endl;
+    }
+    NodoHumano*masPecador(){
+        NodoHumano*actual;
+        vector<NodoHumano*> humanos=heap->obtenerHumanosOrdenados();
+        for(int i=0; i<humanos.size(); i++){
+            if(humanos[i]->obtenerCantidadPecados()>actual->obtenerCantidadPecados()){
+                actual=humanos[i];
+            }
+        }
+        return actual;
+    }
+    NodoHumano*obtenerMasPecador(){
+        vector<NodoHumano*> humanos=heap->obtenerHumanosOrdenados();
+        return humanos[0];
+    }
+    NodoHumano*obtenerMenosPecador(){
+        vector<NodoHumano*> humanos=heap->obtenerHumanosOrdenados();
+        return humanos[humanos.size()-1];
+    }
+    double obtenerPromedio(){
+        vector<NodoHumano*> humanos=heap->obtenerHumanosOrdenados();
+        int cont=0;
+        int ac=0;
+        for(int i=0; i<humanos.size(); i++){
+            ac++;
+            cont+=humanos[i]->mayorPecado()->cantidad;
+        }
+        return cont/ac;
+    }
+    void imprimir(){
+        cout<<nombre<<": "<<pecado<<endl;
+        cout<<"Cantidad de humanos: "<<heap->tamano()<<endl;
+        cout<<"Promedio: "<<obtenerPromedio()<<". Maximo: "<<obtenerMasPecador()<<". Minimo: "<<obtenerMenosPecador()<<endl;
+        vector<NodoHumano*> humanos=heap->obtenerHumanosOrdenados();
+        for(int i=0; i<humanos.size(); i++){
+           humanos[i]->imprimir();
+        }
+    }
+};
+struct Arbol{
+    NodoHumano*raiz;
+    Arbol*hijoizq;
+    Arbol*hijoder;
+    Arbol(){
+        raiz=NULL;
+    }
+    void insertar(NodoHumano*humano){
+        if(raiz=NULL){
+            raiz=humano;
+        }else if(raiz->id<humano->id){
+            hijoder->insertar(humano);
+        }else{
+            hijoizq->insertar(humano);
+        }
+    }
+    void imprimir(){
+        if (raiz == nullptr) {
+        return;
+    }
+
+        hijoizq->imprimir();
+        raiz->imprimir();
+        hijoder->imprimir();
+    }
+    int cantidadAux(Arbol*arbol){
+        if(raiz==NULL){
+            return 0;
+        }else{
+            return 1+cantidadAux(arbol->hijoizq)+cantidadAux(arbol->hijoder);
+        }
+    }
+    int cantidad(){
+        if(raiz==NULL){
+            return 0;
+        }else{
+            return 1+cantidadAux(hijoizq)+cantidadAux(hijoder);
+        }
+    }
+};
+struct Hash{
+    Arbol*humanos[1000];
+    Hash(){
+        for(int i=0; i<1000; i++){
+            humanos[i]=new Arbol();
+        }
+    }
+    void insertar(NodoHumano*humano){
+        humanos[humano->id%1000]->insertar(humano);
+    }
+    void imprimir(){
+        for(int i=0; i<1000; i++){
+            humanos[i]->imprimir();
+        }
+    }
+    int cantidad(){
+        int cont=0;
+        for(int i=0; i<1000; i++){
+            cont+=humanos[i]->cantidad();
+        }
+    }
+};
+Demonio*demonios[7];
+void condenarPorDemonio(ListaHumanos*listahumanos){
+    int x;
+    cout<<"CONDENAR"<<endl;
+    for(int i=0; i<7; i++){
+        cout<<i+1<<demonios[i]->nombre<<": "<<demonios[i]->pecado<<endl;
+    }
+    cout<<"Digite su opcion: "<<endl;
+    cin>>x;
+    demonios[x-1]->condenar(listahumanos);
+}
+void mostrarDemonios(){
+    for(int i=0; i<7; i++){
+        cout<<demonios[i]->nombre<<demonios[i]->pecado<<endl;
+    }
+}
 void generarDemonios(){
     for(int i=0; i<7; i++){
         demonios[i]=new Demonio(nombredemonios[i],pecados[i]);
     }
 }
-
-int random(int max){
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> distribucion(0, max);
-    int numero = distribucion(gen);
-    return numero;
+int cantidadInfierno(){
+    int cont=0;
+    for(int i=0; i<7; i++){
+        cont+=demonios[i]->heap->tamano();
+    }
+    return cont;
 }
+string nombresangeles[10]={"Miguel","Nuriel","Aniel","Rafael","Gabriel","Shamsiel","Raguel","Uriel","Azrael","Sariel"};
+struct NodoAngel{
+    /*Nombre: es uno de los nomres de la lista de ángeles
+Versión: es el número de ese angel en esa generación
+Generación: es el nivel del árbol
+Humano: es un puntero al humano que fue salvado por
+el ángel.*/
+    string nombre;
+    int version;
+    int gen;
+    NodoHumano*humano;
+    NodoAngel*izquierdo;
+    NodoAngel*central;
+    NodoAngel*derecho;
+    NodoAngel(int _gen){
+        nombre=nombresangeles[random(10)];
+        gen=_gen;
+        izquierdo=NULL;
+        central=NULL;
+        derecho=NULL;
+    }
+    NodoHumano* salvar(){
+        NodoHumano*actual;
+        for(int i=0; i<7; i++){
+            if(demonios[i]->masPecador()->obtenerCantidadPecados()>actual->obtenerCantidadPecados()){
+                actual=demonios[i]->masPecador();
+            }
+        }humano=actual;
+        humano->estado="cielo";
+        return humano;
+    }
+};
+struct ArbolAngeles{
+    Hash*hash;
+    int gen=0;
+    NodoAngel*raiz;
+    ArbolAngeles(){
+        hash=new Hash();
+        raiz=new NodoAngel(gen);
+        raiz->nombre="El Dios";
+        gen++;
+        raiz->izquierdo=new NodoAngel(gen);
+        raiz->central=new NodoAngel(gen);
+        raiz->derecho=new NodoAngel(gen);
+        raiz->izquierdo->nombre="Serafines";
+        raiz->central->nombre="Querubines";
+        raiz->derecho->nombre="Tronos";
+        gen++;
+    }
+    
+    void insertarEnUltimoNivel(NodoAngel* raiz, NodoAngel*nuevo) {
+        if (raiz==NULL) {
+            raiz = nuevo;
+            return;
+        }
+
+    std::queue<NodoAngel*> cola;
+    cola.push(raiz);
+
+    while (!cola.empty()) {
+        NodoAngel* nodoActual = cola.front();
+        cola.pop();
+
+        // Verifica si el nodo tiene espacio en el nivel actual.
+        if (!nodoActual->central) {
+            // Si hay espacio, agrega el nuevo nodo aquí.
+            
+                nodoActual->central = nuevo;
+            
+            return; // Termina el proceso de inserción.
+        }
+
+        // Agrega los hijos del nodo actual a la cola para seguir buscando espacio.
+        
+        if (nodoActual->central) cola.push(nodoActual->central);
+        
+    }
+}
+void salvar(){
+        
+    if (!raiz) return;
+
+    std::queue<NodoAngel*> cola;
+    cola.push(raiz);
+
+    while (!cola.empty()) {
+        NodoHumano*humano;
+        NodoAngel* nodoActual = cola.front();
+        cola.pop();
+
+        if (!nodoActual->central) {
+            // Si es un nodo del último nivel, ejecuta la función en él.
+            humano=nodoActual->salvar();
+            insertarEnUltimoNivel(raiz, new NodoAngel(gen));
+            hash->insertar(humano);
+        }
+
+        if (nodoActual->central) cola.push(nodoActual->central);
+        
+
+    }
+    gen++;
+}
+};
 
 
 string trim(string str) {
@@ -412,20 +1010,6 @@ string trim(string str) {
     return str.substr(first, (last - first + 1));
 }
 
-vector<string> cargarArchivo(string nombreArchivo) {
-    vector<string> palabras;
-    ifstream archivo(nombreArchivo);
-    if (archivo.is_open()) {
-        string palabra;
-        while (getline(archivo, palabra, ',')) {
-            palabra.erase(0, palabra.find_first_not_of(" \"'"));
-            palabra.erase(palabra.find_last_not_of(" \"'") + 1);
-            palabras.push_back(palabra);
-        }
-        archivo.close();
-    }
-    return palabras;
-}
 
 int seleccionarRed(){ //0 Twiter, 1 Instagram, 2 Netflix, 3 Tinder, 4 Facebook, 5 Linkedin, 6 Pinterest
     string x;
@@ -441,18 +1025,51 @@ int seleccionarRed(){ //0 Twiter, 1 Instagram, 2 Netflix, 3 Tinder, 4 Facebook, 
     return stoi(x);
 }
 
-string seleccionarDeVector(vector <string> vector){
+string seleccionarDeVector(vector<string> vector) {
     for (int i = 0; i < vector.size(); i++) {
-        cout << i << ". " << vector[i] <<endl;
+        cout << i << ". " << vector[i] << endl;
     }
 
     int opcion;
-    std::cout << "Escriba el número de la opción que desea seleccionar: ";
+    cout << "Digite el número de la opción que desea seleccionar: ";
     cin >> opcion;
 
     if (opcion >= 0 && opcion < vector.size()) {
         return vector[opcion];
     } else {
-        return "Opción no válida"; 
+        return "Opción no válida";
     }
 }
+
+
+/*
+void mandarCorreo(){
+    httplib::Client cli("smtps://smtp.gmail.com");
+
+    // Configuración para Gmail (modifica con tus propias credenciales)
+    const char *email = "tucorreo@gmail.com";
+    const char *password = "tupassword";
+    const char *recipient = "destinatario@gmail.com";
+    const char *subject = "Asunto del correo";
+    const char *body = "Cuerpo del correo";
+
+    // Construir el cuerpo del correo
+    std::string payload =
+        "From: " + std::string(email) + "\r\n"
+        "To: " + std::string(recipient) + "\r\n"
+        "Subject: " + std::string(subject) + "\r\n\r\n"
+        + std::string(body);
+
+    // Enviar el correo
+    auto res = cli.Post("/sendmail", httplib::Headers{{"Authorization", "Basic " + httplib::base64_encode(std::string(email) + ":" + std::string(password))}}, payload, "application/x-www-form-urlencoded");
+
+    if (res && res->status == 200) {
+        std::cout << "Correo enviado con éxito.\n";
+    } else {
+        std::cerr << "Error al enviar el correo. Código de estado: " << (res ? res->status : -1) << "\n";
+    }
+
+}
+*/
+//generarDemonios();
+//ORDENELO DEL MAS AL MENOS PECADOR POR DEMONIO (archivo)
