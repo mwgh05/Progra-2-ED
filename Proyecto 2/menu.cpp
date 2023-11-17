@@ -5,10 +5,10 @@ int main(int argc, char** argv) {
   generarDemonios();
   ArbolAngeles*angeles=new ArbolAngeles();
   int option, val;
+  option=-1;
 
   while (option != 0){
-    cout << "What operation do you want to perform? " <<
-      " Select Option number. Enter 0 to exit." << endl;
+    cout<<"***********MENU***********"<<endl;
     cout << "1. Insertar Humanos" << endl;
     cout << "2. Mostrar arbol" << endl;
     cout << "3. Publicar en red social" << endl;
@@ -19,9 +19,8 @@ int main(int argc, char** argv) {
     cout << "8. Ganador" << endl;
     cout << "9. Consultar humano" << endl;
     cout << "10. Buscar Familia"<<endl;
-    cout << "0. Exit Program" << endl;
-
-
+    cout << "0. Salir" << endl;
+    cout << "Digite el numero de su opción: ";
     cin >> option;
     //Node n1;
    // TreeNode * new_node = new TreeNode();
@@ -31,7 +30,7 @@ int main(int argc, char** argv) {
       break;
     case 1:
       	cout <<"CREAR HUMANOS"<<endl;
-	    cout <<"Cantida de humanos a insertar: ";
+	    cout <<"Cantidad de humanos a insertar: ";
 	    cin >> val;
         humanos->crearHumanos(val);
 	    cout<<endl;
@@ -80,13 +79,11 @@ int main(int argc, char** argv) {
     break;
     case 12:
       
-      break;
+      break;*/
     default:
-      cout << "Enter Proper Option number " << endl;
+      cout << "Ingrese un numero valido " << endl;
     }
-*/
+
   } ;
 
-
-}
 }
