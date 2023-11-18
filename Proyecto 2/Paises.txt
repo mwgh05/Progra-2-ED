@@ -1,1 +1,1 @@
-"Estados Unidos", "Canada", "Reino Unido", "Australia", "Francia", "Alemania", "Italia", "España", "Japón", "Brasil", "Argentina", "Mexico", "India", "China", "Rusia", "Sudafrica", "Egipto", "Nigeria", "Corea del Sur", "Arabia Saudita"
+"Estados Unidos", "Canada", "Reino Unido", "Australia", "Francia", "Alemania", "Italia", "España", "Japón", "Brasil"

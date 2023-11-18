@@ -1,1 +1,1 @@
-"Cristianismo", "Islam", "Hinduismo", "Budismo", "Judaísmo", "Sijismo", "Ateísmo", "Agnosticismo", "Zoroastrismo", "Espiritualismo"
+"Cristianismo", "Islam", "Hinduismo", "Budismo", "Judaismo", "Sijismo", "Ateismo", "Agnosticismo", "Zoroastrismo", "Espiritualismo"

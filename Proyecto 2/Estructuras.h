@@ -9,8 +9,6 @@
 #include <queue>
 #include <ctime>
 
-
-
 using namespace std;
 
 string pecados[7]={"Lujuria","Gula","Avaricia","Pereza","Ira","Envidia","Soberbia"};
@@ -148,7 +146,7 @@ struct NodoHumano{
     NodoHumano*siguiente;
     //NodoHumano*hijoder;
     int generacion;
-    NodoHumano(){
+    NodoHumano(vector<NodoHumano*>& nodosExistentes){
         generacion=0;
         id=generarId();
         estado="vivo";
@@ -160,12 +158,34 @@ struct NodoHumano{
         nacimiento=obtenerFechaYHoraActual();
         listaPecados=new ListaPecados();
         //listaAmigos=NULL;
+        generarAmigos(nodosExistentes);
         for(int i=0;i<7;i++){
             redes[i]=random(100);
         }
         siguiente=NULL;
         
     }
+    void generarAmigos(vector<NodoHumano*>& nodosExistentes) {
+        for (NodoHumano* nodo : nodosExistentes) {
+            vector<NodoHumano*> amigos;
+            int cont = random(100);
+
+            for (NodoHumano* posibleAmigo : nodosExistentes) {
+                if (posibleAmigo != nodo && cont > 0) {  
+                    if (posibleAmigo->pais == nodo->pais &&
+                        (posibleAmigo->creencia == nodo->creencia || 
+                        posibleAmigo->profesion == nodo->profesion || 
+                        posibleAmigo->apellido == nodo->apellido)) {
+                        amigos.push_back(posibleAmigo);
+                    }
+                    cont--;
+                }
+            }
+
+            nodo->listaAmigos = amigos; 
+        }
+    }
+
 
     bool idusado(int id){
         for (int i = 0; i < ids.size(); i++) {
@@ -223,7 +243,7 @@ struct NodoHumano{
         int tam = sizeof(numeros) / sizeof(numeros[0]);
         sort(numeros, numeros + tam, greater<int>());
         int x=0;
-        while(x<n){
+        while(x<n && x<7){
             for(int i=0; i<7; i++){
                 if(redes[i]==numeros[x]){
                     sumarPecados(i);
@@ -270,7 +290,7 @@ struct NodoHumano{
     void imprimirAmigos(){
         cout<<"[";
         for(int i=0;i<listaAmigos.size();i++){
-            cout<<listaAmigos[i]->id<<",";
+            cout<<to_string(listaAmigos[i]->id)<<",";
         }
         cout<<"]"<<endl;
     }
@@ -305,10 +325,6 @@ struct ListaHumanos{
     }
     
     void insertarNodo(NodoHumano*nodo){
-        //NodoHumano*nuevo=new NodoHumano();
-        if(nodo->listaAmigos.empty()){
-            generarAmigos(nodo);
-        }
         if(nodo->generacion==0){
             nodo->generacion=gen;
         }
@@ -323,7 +339,7 @@ struct ListaHumanos{
                 while(tmp!=NULL && tmp->siguiente!=NULL){
                     if(nodo->id<tmp->siguiente->id){
                         nodo->siguiente=tmp->siguiente;
-                        //tmp->siguiente=nodo;
+                        tmp->siguiente=nodo;
                         break;
                     }
                     tmp=tmp->siguiente;
@@ -334,31 +350,25 @@ struct ListaHumanos{
         }
     }
     void crearHumanos(int n){
-        for(int i=0; i<=n; i++){
-            insertarNodo(new NodoHumano());
+        vector<NodoHumano*> nodosExistentes;
+        NodoHumano*tmp=pn;
+        while(tmp!=NULL){
+            nodosExistentes.push_back(tmp);
+            tmp=tmp->siguiente;
         }
-        gen++;
-    }
-    void generarAmigos(NodoHumano*humano) {
-        vector<NodoHumano*> amigos;
-        int cont=random(100);
-        NodoHumano* tmp = pn; 
-
-        while (tmp != NULL && cont!=0) {
-            if (tmp != humano) {  
-                if (tmp->pais == humano->pais &&
-                    (tmp->creencia == humano->creencia || 
-                    tmp->profesion == humano->profesion || 
-                    tmp->apellido == humano->apellido)) {
-                    amigos.push_back(tmp);
-                }
+        try{
+            for (int i = 0; i < n; i++) {
+                NodoHumano* nuevoHumano = new NodoHumano(nodosExistentes);
+                insertarNodo(nuevoHumano);
+                nodosExistentes.push_back(nuevoHumano);
             }
-            cont--;
-            tmp = tmp->siguiente;
+            gen++;
+        }catch (std::bad_alloc& e) {
+            std::cerr << "Error de asignación de memoria: " << e.what() << '\n';
+            
         }
-        humano->listaAmigos=amigos;
     }
-
+    
     NodoHumano*buscarPorId(int _id){
         NodoHumano*tmp=pn;
         while(tmp!=NULL){
@@ -465,42 +475,46 @@ struct ListaHumanos{
     }
 
     void mostrarfamilia(){
-        string apellido;
-        string pais;
-        cout<<"Ingrese el pais: ";
+        string apellido, pais;
+        cout << "Ingrese el pais: ";
         getline(cin, pais);
-        cout<<"Ingrese en apellido: ";
+        cout << "Ingrese el apellido: ";
         getline(cin, apellido);
-        vector<NodoHumano*> familia=buscarFamilia(pais,apellido);
-        vector<NodoHumano*> cielo;
-        vector<NodoHumano*> vivos;
-        vector<NodoHumano*> infierno;
-        for(int i=0; i<familia.size(); i++){
-            familia[i]->imprimir();
-            if(familia[i]->estado=="vivo"){
-                vivos.push_back(familia[i]);
-            }else if(familia[i]->estado=="cielo"){
-                cielo.push_back(familia[i]);
-            }else if(familia[i]->estado=="infierno"){
-                infierno.push_back(familia[i]);
+
+        vector<NodoHumano*> familia = buscarFamilia(pais, apellido);
+        if (!familia.empty()) {
+            vector<NodoHumano*> cielo, vivos, infierno;
+
+            for (auto& miembro : familia) {
+                miembro->imprimir();
+                if (miembro->estado == "vivo") {
+                    vivos.push_back(miembro);
+                } else if (miembro->estado == "cielo") {
+                    cielo.push_back(miembro);
+                } else if (miembro->estado == "infierno") {
+                    infierno.push_back(miembro);
+                }
             }
+
+            cout << "Infierno: " << (infierno.size() * 100 / familia.size()) << "%" << endl;
+            cout << "Cielo: " << (cielo.size() * 100 / familia.size()) << "%" << endl;
+            cout << "Vivos: " << (vivos.size() * 100 / familia.size()) << "%" << endl;
+        } else {
+            cout << "No se encontraron miembros de la familia." << endl;
         }
-        cout<<"Infierno: "<<infierno.size()*100/familia.size()<<"%"<<endl;
-        cout<<"Cielo: "<<cielo.size()*100/familia.size()<<"%"<<endl;
-        cout<<"Vivos: "<<vivos.size()*100/familia.size()<<"%"<<endl;
     }
 
     void publicar(){
         cout<<"PUBLICAR"<<endl;
-        string x;
-        int red;
+        int x=0;
+        int red=0;
         cout<<"1. Seleccionar un humano."<<endl;
         cout<<"2. Seleccionar por religion."<<endl;
         cout<<"3. Seleccionar por profesion."<<endl;
         cout<<"4. Seleccionar por familia."<<endl;
         cout<<"Digite su opcion: "<<endl;
-        getline(cin,x);
-        if(x=="1"){
+        cin>>x;
+        if(x==1){
             cout<<"Seleccionar un humano."<<endl;
             imprimirIds();
             int id;
@@ -508,13 +522,13 @@ struct ListaHumanos{
             cin>>id;
             red=seleccionarRed();
             publicar(id,red);
-        }else if(x=="2"){
+        }else if(x==2){
             cout<<"Seleccionar por religion."<<endl;
             string religion;
             cout<<"Seleccione la religion: "<<endl;
             religion=seleccionarDeVector(creencias);
             publicar(religion);
-        }else if(x=="3"){
+        }else if(x==3){
             cout<<"Seleccionar por profesion."<<endl;
             string prof;
             cout<<"Seleccione la profesion: "<<endl;
@@ -523,7 +537,7 @@ struct ListaHumanos{
             cout<<"A cuantas redes favoritas desea publicar?: "<<endl;
             cin>>n;
             publicar(prof,n);
-        }else if(x=="4"){
+        }else if(x==4){
             cout<<"Seleccionar por familia."<<endl;
             string apellido;
             string pais;
@@ -584,6 +598,14 @@ struct ListaHumanos{
         buscarPorId(x, nombre, apellido);
         //buscado->imprimir();
 
+    }
+    ~ListaHumanos() {
+        NodoHumano* actual = pn;
+        while (actual != NULL) {
+            NodoHumano* aEliminar = actual;
+            actual = actual->siguiente;
+            delete aEliminar;
+        }
     }
 };
 
@@ -736,9 +758,23 @@ string archivosCondenacion() {
     ofstream archivoSalida(nombreArchivo.c_str()); 
     if (archivoSalida.is_open()) {
         archivoSalida << "INFIERNO\n";
+        archivoSalida << "Fecha y hora de creacion: " << fechaHora << "\n";
+        archivoSalida.close();
+        cout << "Archivo de condenacion creado exitosamente.\n";
+    } else {
+        cerr << "Error al abrir el archivo.\n";
+    }
+    return nombreArchivo;
+}
+string archivosSalvacion() {
+    string fechaHora = obtenerFechaYHoraActual();
+    string nombreArchivo = "Salvacion_" + fechaHora + ".txt";
+    ofstream archivoSalida(nombreArchivo.c_str()); 
+    if (archivoSalida.is_open()) {
+        archivoSalida << "CIELO\n";
         archivoSalida << "Fecha y hora de creaci�n: " << fechaHora << "\n";
         archivoSalida.close();
-        cout << "Archivo de condenaci�n creado exitosamente.\n";
+        cout << "Archivo de salvacion creado exitosamente.\n";
     } else {
         cerr << "Error al abrir el archivo.\n";
     }
@@ -805,7 +841,7 @@ struct Demonio{
         for(int i=0; i<(pecadores.size()/500); i++){
             if(pecadores[i]->estado=="vivo"){
                 heap->insertar(pecadores[i]);
-                string texto=fecha()+obtenerHoraActual()+"\t Humano "+to_string(i)+pecadores[i]->nombre+pecadores[i]->apellido+"\t"+pecadores[i]->pais+" Murió el "+fecha()+" condenado por "+to_string(pecadores[i]->mayorPecado()->cantidad)+" pecados de "+pecado+" por el demonio "+nombre+"\t";
+                string texto=fecha()+obtenerHoraActual()+"\t Humano "+to_string(i)+pecadores[i]->nombre+pecadores[i]->apellido+"\t"+pecadores[i]->pais+" Murió el "+fecha()+" condenado por "+to_string(pecadores[i]->mayorPecado()->cantidad)+" pecados de "+pecado+" por el demonio "+nombre+"\n";
                 escribirEnArchivo(archivo, texto);
             }
         }
@@ -917,7 +953,7 @@ void condenarPorDemonio(ListaHumanos*listahumanos){
     int x=0;
     cout<<"CONDENAR"<<endl;
     for(int i=0; i<7; i++){
-        cout<<i+1<<demonios[i]->nombre<<": "<<demonios[i]->pecado<<endl;
+        cout<<i+1<<" "<<demonios[i]->nombre<<": "<<demonios[i]->pecado<<endl;
     }
     cout<<"Digite su opcion: "<<endl;
     cin>>x;
@@ -1003,29 +1039,21 @@ struct ArbolAngeles{
     while (!cola.empty()) {
         NodoAngel* nodoActual = cola.front();
         cola.pop();
-
-        // Verifica si el nodo tiene espacio en el nivel actual.
         if (!nodoActual->central) {
-            // Si hay espacio, agrega el nuevo nodo aquí.
-            
-                nodoActual->central = nuevo;
-            
-            return; // Termina el proceso de inserción.
-        }
-
-        // Agrega los hijos del nodo actual a la cola para seguir buscando espacio.
-        
-        if (nodoActual->central) cola.push(nodoActual->central);
-        
+            nodoActual->central = nuevo;           
+            return;
+        }        
+        if (nodoActual->central) cola.push(nodoActual->central);        
     }
 }
 void salvar(){
-        
+    string archivo=archivosSalvacion();    
     if (!raiz) return;
 
     std::queue<NodoAngel*> cola;
     cola.push(raiz);
-
+    int cont=0;
+    int vers=1;
     while (!cola.empty()) {
         NodoHumano*humano;
         NodoAngel* nodoActual = cola.front();
@@ -1034,13 +1062,18 @@ void salvar(){
         if (!nodoActual->central) {
             // Si es un nodo del último nivel, ejecuta la función en él.
             humano=nodoActual->salvar();
-            insertarEnUltimoNivel(raiz, new NodoAngel(gen));
+            NodoAngel*nuevo=new NodoAngel(gen);
+            insertarEnUltimoNivel(raiz, nuevo);
+            nuevo->version=vers;
+            vers++;
             hash->insertar(humano);
+            string texto=fecha()+obtenerHoraActual()+"\t Humano "+to_string(cont)+humano->nombre+humano->apellido+"\t"+humano->pais+" Salva el "+fecha()+" por "+to_string(humano->obtenerCantidadPecados())+" pecados el angel "+nodoActual->nombre+"("+to_string(nodoActual->version)+")"+" Generacion "+to_string(nodoActual->gen)+"\n";
+            escribirEnArchivo(archivo, texto);
         }
 
         if (nodoActual->central) cola.push(nodoActual->central);
         
-
+        cont++;
     }
     gen++;
 }
@@ -1061,6 +1094,18 @@ string trim(string str) {
 
 
 /*
+MailMessage msg;
+msg.addRecipient (MailRecipient (MailRecipient::PRIMARY_RECIPIENT,
+                                       "bob@example.com", "Bob"));
+msg.setSender ("Me <me@example.com>");
+msg.setSubject ("Subject");
+msg.setContent ("Content");
+
+SMTPClientSession smtp ("mail.example.com");
+smtp.login ();
+smtp.sendMessage (msg);
+smtp.close ();
+
 void mandarCorreo(){
     httplib::Client cli("smtps://smtp.gmail.com");
 
@@ -1091,3 +1136,4 @@ void mandarCorreo(){
 */
 //generarDemonios();
 //ORDENELO DEL MAS AL MENOS PECADOR POR DEMONIO (archivo)
+//, "Argentina", "Mexico", "India", "China", "Rusia", "Sudafrica", "Egipto", "Nigeria", "Corea del Sur", "Arabia Saudita"
